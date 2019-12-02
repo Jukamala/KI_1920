@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 # Load data from csv
@@ -19,19 +20,25 @@ def plot_data(x_train, y_train, x_test, y_test):
     plt.show()
 
 
-# plot the predicted data
+# plot data + predicted and real labels
 def plot_predict(model, x, y):
-    prediction = model.predict(x)
     fig, ax = plt.subplots(figsize=(10, 5))
-    dist = -np.abs(y - prediction)
+    y_predict = model.predict(x)
+    dist = np.abs(y - y_predict)
     norm = plt.Normalize(np.min(dist), np.max(dist))
-    ax.scatter(x, y, s=4, c=plt.cm.viridis(norm(dist)))
-    ax.plot(x, prediction, c='red')
-    ax.set_title(r'Model: $%s$' % ''.join(['+ %.2f\cdot x^{%d}' % (a, i) if i > 0 and a >= 0 else
-                                           '%.2f\cdot x^{%d}' % (a, i) if i > 0 else
-                                           '%.2f' % a for i, a in enumerate(model.model)]))
-
+    ax.scatter(x, y, s=4, c=plt.cm.viridis_r(norm(dist)))
+    ax.plot(x, y_predict, c='red', label = 'y_predict [ED = %.2f]' % ed(y, y_predict))
+    ax.legend(loc='lower left')
+    ax.set_title(r'Model: $%s$' % ''.join(['+ %.2f x^{%d}' % (a, i) if i > 0 and a >= 0 else
+                  '%.2f x^{%d}' % (a, i) for i, a in enumerate(model.model)]).replace('x^{0}','').replace('x^{1}','x'))
+    cax = make_axes_locatable(ax).append_axes('right', size='2%', pad=0.05)
+    plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap='viridis_r'), cax=cax).set_label('distance to prediction')
     plt.show()
+
+
+# Euclidian Distance
+def ed(y, y_hat):
+    return np.sqrt(np.mean((y - y_hat)**2))
 
 
 class RegressionModel:
@@ -59,24 +66,16 @@ class RegressionModel:
         return x_val**p
 
 
-
-
 if __name__ == '__main__':
     [x_train, y_train], [x_test, y_test] = data_loader()
-    #plot_data(x_train, y_train, x_test, y_test)
+    plot_data(x_train, y_train, x_test, y_test)
 
     for p in range(2, 5):
         model = RegressionModel(p)
         model.fit(x_train, y_train)
-        print(model.model)
         plot_predict(model, x_train, y_train)
+        plot_predict(model, x_test, y_test)
 
-
-"""
-#### example usage 
-...
-p2 = RegressionModel(2)
-p2.fit(x_train, y_train)
-y_predict = p2.predict(x_test)
-...
-"""
+    y = np.array([0.8, 0.43, 1.74, 0.26, 4.06, 0.73, 2.8, 3.37])
+    y_hat = np.array([3.49, 1.3, 1.49, 4.12, 2.19, 4.24, 4.67, 0.22])
+    print('ED(y,y_hat) = %.2f' % ed(y, y_hat))
