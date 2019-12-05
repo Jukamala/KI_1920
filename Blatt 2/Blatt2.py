@@ -70,8 +70,8 @@ class RegressionModel:
         self.Normalizers[1].autoscale(y_train)
 
         #Normalize
-        x_train = np.array(self.Normalizers[0].__call__(x_train))
-        y_train = np.array(self.Normalizers[1].__call__(y_train))
+        x_train = np.array(self.Normalizers[0](x_train))
+        y_train = np.array(self.Normalizers[1](y_train))
 
         #Features
         X = self._generate_features(x_train)
@@ -80,7 +80,7 @@ class RegressionModel:
         try:
             self.model = np.linalg.solve(np.dot(X.T, X), np.dot(X.T, y_train))
         except np.linalg.LinAlgError:
-            # Start Gaussian distribiution
+            # Start with Gaussian distribiution
             self.model = np.random.normal(0, 1, self.degree + 1)
 
         # Fine-Tune this with the Gradient Descent to combat rounding errors
@@ -99,7 +99,7 @@ class RegressionModel:
 
     def predict(self, x_test):
         #Normalized on x_train
-        x_test = np.array(self.Normalizers[0].__call__(x_test))
+        x_test = np.array(self.Normalizers[0](x_test))
 
         if self.model is None:
             raise RuntimeError('fit a model using .fit(...) before calling .predict(...)')
