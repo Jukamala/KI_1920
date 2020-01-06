@@ -168,8 +168,9 @@ def aufgabe_2_1():
     # (for h to be monotone it has to hold: h(x) <= h(y) + c(x,y) for all x,y
 
     # 2.1.c) We can't use the non-monotone h so we'll use the old one:
+    # We start from s because it isn't more work compared to starting in e
     g['g']['t']['c'] = 23
-    path = a_star(g, h, 'e', 't', animate=True, pos=pos, title='A* für Aufgabe 2.1.c)')
+    path = a_star(g, h, 's', 't', animate=True, pos=pos, title='A* für Aufgabe 2.1.c)')
     print("Shortest Path from s to t is %s\n" % path)
 
 
@@ -217,7 +218,7 @@ def aufgabe_2_3():
     fig.canvas.set_window_title('Labyrinth für Aufgabe 2.3)')
     edge_colors = ['darkorange' if (u, v) in zip(path[:-1] + path[1:], path[1:] + path[:-1])
                    else 'grey' for u, v in g.edges()]
-    nx.draw(g, pos=pos, ax=ax, node_size=70, linewidths=4, width=2, alpha=0.9,
+    nx.draw(g, pos=pos, ax=ax, node_size=50, linewidths=4, width=2, alpha=0.9,
             node_color='skyblue', edge_color=edge_colors)
     nx.draw_networkx_edge_labels(g, pos=pos, edge_labels=nx.get_edge_attributes(g, 'c'), ax=ax, font_size=8, alpha=0.9)
     plt.show()
@@ -227,4 +228,3 @@ if __name__ == '__main__':
     aufgabe_2_1()
     aufgabe_2_2()
     aufgabe_2_3()
-
