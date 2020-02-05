@@ -4,106 +4,136 @@ import time
 
 class my_Bot:
     def __init__(self, spieler_farbe):
-        self.spieler_farbe = spieler_farbe
-        if self.spieler_farbe == "black":
-            self.gegner_farbe = "white"
-        else:
-            self.gegner_farbe = "black"
+        self.spieler_farbe = spieler_farbe == 'white'
+        self.gegner_farbe = not self.spieler_farbe
         self.spielfeld = None
         self.pos_felder = None
         self.cur_choice = None
         self.timeout = False
 
-        # Store evaluated positions - (value, value_type)
+        # Store evaluated positions - [value, value_type]
         self.positions = dict()
 
     def set_next_stone(self):
-        # empty - 0, white - 1, black - 2
-        sp = np.zeros((8, 8))
-        sp[self.spielfeld == 'white'] = 1
-        sp[self.spielfeld == 'black'] = 2
+        # empty - 0, white - 1, black - 1
+        position = np.zeros((8, 8))
+        position[self.spielfeld == 'white'] = -1
+        position[self.spielfeld == 'black'] = 1
 
-        pos_zeilen = [(idr, idz) for idr, row in enumerate(self.pos_felder) for idz, zelle in enumerate(row) if
-                      zelle == "pos_f"]
-        self.cur_choice = pos_zeilen[
-            0]  # Bei jedem Bot zuerst irgendein Wert setzen, falls Timeout abgelaufen, wird dieser Wert genommen
-        print(self.spielfeld)
-        print(self.spieler_farbe)
-        print(self.pos_felder)
+        for depth in range(2, 8):
+            _, _, self.cur_choice = self.alpha_beta(position, self.spieler_farbe, 1, depth)
+            print("len %s" % len(self.positions))
+            self.positions = dict()
 
-
-    def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf')):
+    def alpha_beta(self, position, spieler, depth, maxdepth, alpha=float('-inf'), beta=float('inf')):
         """
-        position:  8x8 array with 0 - empty, 1 - white, 2 - black
+        position:  8x8 array with 0 - empty, -1 - white, 1 - black
         spieler:   True - White, False - Black
         depth:     # of pieces on board (depth of search)
 
-        returns next move by calculating best end-value
-        value is white number of pieces - black number of pieces
-        -> white is max, black is min
+        returns [move, pure, move]
+        move: next move by calculating best end-value
+              value is white number of pieces - black number of pieces
+              -> white is max, black is min
+        pure: True if returned value if true minmax-value or False if result of early stopping
+        move: Best move to make
         """
-        if position in self.positions:
-            return self.positions[position][0]
+        # Game done
+        if np.count_nonzero(position) == 64:
+            #  # White - # Black
+            e, counts = np.unique(position, return_counts=True)
+            e = list(e)
+            whites = counts[e.index(-1)] if -1 in e else 0
+            blacks = counts[e.index(-1)] if -1 in e else 0
+            return [whites - blacks, True, None]
 
-        if depth == 64:
-            return
+        # Early stopping
+        elif depth == maxdepth:
+            # Use heuristic
+            e, counts = np.unique(position, return_counts=True)
+            e = list(e)
+            whites = counts[e.index(-1)] if -1 in e else 0
+            blacks = counts[e.index(1)] if 1 in e else 0
+            return [whites - blacks, False, None]
 
-        moves = self.possible_felder(white)
-        int i,n,value,localalpha=alpha,bestvalue=-INFINITY;
-        int hashvalue;
+        posbytes = position.tobytes()
+        if posbytes in self.positions:
+            value, pure, moves = self.positions[posbytes]
+            if pure:
+                return [value, pure, moves[0]]
+            # Look again for unpure
+            value_set = True
+        else:
+            pure = True
+            value_set = False
+            moves, mobility = self.possible_felder(position, spieler)
+            # TODO: Sort moves
 
-        if(lookup(p, depth, &alpha, &beta, &hashvalue))
-            return hashvalue;
+        # print("%s at %s / %s - %s" % (spieler, depth, maxdepth, moves))
 
-        if(checkwin(p))
-            return -INFINITY;
+        if len(moves) == 0:
+            # TODO Two dicts
+            if len(self.possible_felder(position, not spieler)) == 0:
+                # Return max
+                value = (-1)**(not spieler) * 64
+                self.positions[position.tobytes()] = [value, True, None]
+                return [value, True, []]
+            v, p, _ = self.alpha_beta(position, spieler, depth + 1, maxdepth, alpha=alpha, beta=beta)
+            # Set alpha/beta
+            if not value_set:
+                value = float('-inf') if spieler else float('inf')
+            if spieler is True and v > value:
+                pure = pure & p
+                value = v
+                alpha = max(alpha, value)
+            elif spieler is False and v < value:
+                pure = pure & p
+                value = v
+                beta = min(beta, value)
+            return [value, pure, []]
 
-        if(depth == 0)
-            return evaluation(p);
+        best_id = 0
+        # White
+        if spieler is True:
+            if not value_set:
+                value = float('-inf')
+            for i, move in enumerate(moves):
+                # print(i, move, move[0], move[1])
+                _, undos = self.check_rules(position, move[0], move[1], spieler, play=True)
+                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, maxdepth, alpha=alpha, beta=beta)
+                if v > value:
+                    pure = pure & p
+                    value = v
+                    best_id = i
+                for place, undo in undos.items():
+                    position[place[0], place[1]] = undo
+                alpha = max(alpha, value)
+                if alpha > beta:
+                    break
+        # Black
+        else:
+            if not value_set:
+                value = float('inf')
+            for i, move in enumerate(moves):
+                # print(i, move)
+                _, undos = self.check_rules(position, move[0], move[1], spieler, play=True)
+                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, maxdepth, alpha=alpha, beta=beta)
+                if v < value:
+                    pure = pure & p
+                    value = v
+                    best_id = i
+                for place, undo in undos.items():
+                    position[place[0], place[1]] = undo
+                beta = min(beta, value)
+                if alpha >= beta:
+                    break
 
-        n = makemovelist(p,list);
-        if(n==0)
-            return handlenomove(p);
+        # Reorder with best first
+        moves = [moves.pop(best_id)] + moves
+        self.positions[position.tobytes()] = [value, pure, moves]
+        return [value, pure, moves[0]]
 
-        for(i=0;i<n;i++)
-            {
-            domove(list[i],&p);
-            value = -alphabeta(p,depth-1,-beta,-localalpha);
-            undomove(list[i],&p);
-            bestvalue = max(value,bestvalue);
-            if(bestvalue >= beta)
-                break;
-            if(bestvalue>localalpha)
-                localalpha = bestvalue;
-            }
-
-        store(p, depth, bestvalue, alpha, beta);
-
-        return bestvalue;
-        }
-
-    def minmax(g, node, spieler, alpha=float('-inf'), beta=float('inf')):
-
-    if
-    if max_player:
-        value = float('-inf')
-        for n in g[node]:
-            value = max(value, minmax(g, n, False, alpha=alpha, beta=beta))
-            alpha = max(alpha, value)
-            if alpha > beta:
-                break
-    else:
-        value = float('inf')
-        for n in g[node]:
-            value = min(value, minmax(g, n, True, alpha=alpha, beta=beta))
-            beta = min(beta, value)
-            if alpha >= beta:
-                break
-    # Also set alpha/beta in g
-    nx.set_node_attributes(g, {node: {'alpha': alpha, 'beta': beta}})
-    return value
-
-    def check_rules(self, neuer_stein, spieler):
+    def check_rules(self, position, row, col, spieler, play=False):
         """
         :param neuer_stein: Tupel von der Form (x,y) mit x und y im Intervall [0,7]. Wobei x der Spalte
                             und y der Zeile entspricht. Beispiel: self.spielfeld[y][x]
@@ -115,58 +145,79 @@ class my_Bot:
                             aktualisiert werden. check_only=True, dann wird self.spielfeld nicht aktualisiert
         :return: True, wenn neuer_stein für spieler ein zulässiger Zug ist, Flase sonst
         """
-        idx, idy = neuer_stein
-        akt_farbe = "black" if spieler == 0 else "white"
-        gegner_farbe = "black" if ((spieler + 1) % 2) == 0 else "white"
+        undos = {(row, col): position[row, col]}
 
-        # print("\nidy, idx =", idy, idx)
-        # print("self.spielfeld[idy][idx] =", self.spielfeld[idy][idx])
+        found = False
+        for stepr, stepc in [(1, 1), (1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0), (-1, -1)]:
+            nrow, ncol = row + stepr, col + stepc
+            flipped = False
+            while nrow in range(8) and ncol in range(8):
+                if not flipped:
+                    # Gegnerischer Stein anliegend?
+                    if position[nrow, ncol] != (-1)**(not spieler):
+                        break
+                    flipped = True
+                else:
+                    if position[nrow, ncol] == (-1)**spieler:
+                        if play:
+                            # Fill in
+                            while nrow != row or ncol != col:
+                                nrow, ncol = nrow - stepr, ncol - stepc
+                                if nrow != row or ncol != col:
+                                    undos.update({(nrow, ncol): position[nrow, ncol]})
+                                position[nrow, ncol] = (-1)**spieler
+                        found = True
+                        break
+                    # Lücke
+                    elif position[nrow, ncol] == 0:
+                        break
+                nrow, ncol = nrow + stepr, ncol + stepc
+        return found, undos
 
-        if not self.spielfeld[idy][idx] == "empty":
-            return False
-        else:
-            possible_directions = []  # von (-1,-1) bis (1,1)
-            for row in np.arange(max(idy - 1, 0), min(idy + 2, 8), 1):
-                for zelle in np.arange(max(idx - 1, 0), min(idx + 2, 8), 1):
-                    if not (row == idy and zelle == idx) and self.spielfeld[row][zelle] == gegner_farbe:
-                        # print("(row-idy, zelle-idx) =", (row-idy, zelle-idx))
-                        possible_directions.append((row - idy, zelle - idx))
-            if len(possible_directions) > 0:
-                richtiger_zug = False
-                for elem in possible_directions:
-                    schluss_stein_gefunden = False
-                    temp_spielfeld = self.spielfeld.copy()
-                    y_direction = idy + elem[0]
-                    x_direction = idx + elem[1]
-                    while y_direction in range(8) and x_direction in range(8) and not schluss_stein_gefunden:
-                        if self.spielfeld[y_direction][x_direction] == gegner_farbe:
-                            temp_spielfeld[y_direction][x_direction] = akt_farbe
-                        elif self.spielfeld[y_direction][x_direction] == akt_farbe:
-                            schluss_stein_gefunden = True
-                            richtiger_zug = True
-                            if not check_only:
-                                self.spielfeld = temp_spielfeld.copy()
-                        elif self.spielfeld[y_direction][x_direction] == "empty":
-                            break
-
-                        y_direction += elem[0]
-                        x_direction += elem[1]
-                if richtiger_zug:
-                    return True
-            return False
-
-    def possible_felder(self, spieler):
+    def find_moves(self, position, row, col, spieler):
         """
-        spieler: 0 - white, 1 - black
+        Same as check_rules but faster for empty boards
         """
-        # akt_spielfeld = self.spielfeld.copy()
-        pos_felder = np.array(["empty"] * (8 * 8)).reshape((8, 8))
-        counter = 0
-        for row in range(8):
-            for zelle in range(8):
-                if self.spielfeld[row][zelle] == "empty" and self.check_rules((zelle, row), spieler, check_only=True):
+        found = []
+        for stepr, stepc in [(1, 1), (1, 0), (1, -1), (0, 1), (0, -1), (-1, 1), (-1, 0), (-1, -1)]:
+            nrow, ncol = row + stepr, col + stepc
+            flipped = False
+            while nrow in range(8) and ncol in range(8):
+                if not flipped:
+                    # Gegnerischer Stein anliegend?
+                    if position[nrow, ncol] != (-1) ** (not spieler):
+                        break
+                    flipped = True
+                else:
+                    if position[nrow, ncol] == 0:
+                        found += [(nrow, ncol)]
+                        break
+                    elif position[nrow, ncol] == (-1) ** spieler:
+                        break
+                nrow, ncol = nrow + stepr, ncol + stepc
+        return found
+
+    def possible_felder(self, position, spieler):
+        val, counts = np.unique(position, return_counts=True)
+        ind = list(val)
+        stones = counts[ind.index((-1)**spieler)] if (-1)**spieler in ind else 0
+        holes = counts[ind.index(0)] if 0 in ind else 0
+
+        if stones > holes:
+            # Start from empty spots
+            counter = 0
+            l = []
+            rows, cols = np.where(position == 0)
+            for i in range(len(rows)):
+                row = rows[i]
+                col = cols[i]
+                check, _ = self.check_rules(position, row, col, spieler, play=False)
+                if check:
+                    l += [(row, col)]
                     counter += 1
-                    pos_felder[row][zelle] = "pos_f"
-        # self.spielfeld = akt_spielfeld.copy()
-        # print("pos_felder =", counter == len(pos_felder))
-        return counter, pos_felder
+            return l, counter
+        else:
+            # Start from own stones
+            rows, cols = np.where(position == (-1)**spieler)
+            l = list(set([m for i in range(len(rows)) for m in self.find_moves(position, rows[i], cols[i], spieler)]))
+            return l, len(l)
