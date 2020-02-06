@@ -31,9 +31,8 @@ class my_Bot:
         p = False
         while not p and not self.timeout:
             _, p, self.cur_choice = self.alpha_beta(position, self.spieler, depth, depth + deep)
-            #print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
-             #                       if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
-            self.positions = [[dict(), dict()] for i in range(64)]
+            # print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
+            #                        if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
             deep += 1
         print(self.spieler, deep, p)
 
@@ -76,7 +75,7 @@ class my_Bot:
         if posbytes in self.positions[depth][spieler]:
             value, pure, moves = self.positions[depth][spieler][posbytes]
             if pure:
-                return [value, pure, moves[0] if moves is not None else None]
+                    return [value, pure, moves[0] if moves is not None else None]
             if moves is None:
                 print('ho')
                 print("%s at %s / %s - %s" % (spieler, depth, maxdepth, moves))

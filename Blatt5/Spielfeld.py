@@ -7,6 +7,7 @@ import pygame
 from Random_Bot import my_random_bot
 from Greedy_Bot import my_greedy_bot
 from Bot_42 import my_Bot
+from TwoBot import my_Bot as my_Bot_2
 
 
 
@@ -243,7 +244,7 @@ class Spielfeld:
     def play_game(self, use_bots):
         spieler = 0
         running = True
-        timeout = 60
+        timeout = 0.5
 
         black_stones, white_stones, self.hat_gewonnen = self.check_for_win()
         akt_spieler_musste_passen = 0
@@ -257,10 +258,10 @@ class Spielfeld:
             einen Bot spielen möchten und den Schwierigkeitsgrad des Bots ändern möchten, können
             Sie den bot_white_1 anpassen.
             """
-            bot_black_0 = my_random_bot(spieler_farbe="black")
+            bot_black_0 = my_Bot(spieler_farbe="black")
             # bot_black_0 = my_greedy_bot(spieler_farbe="black", simple_Bot=True)
 
-            bot_white_1 = my_Bot(spieler_farbe="white")
+            bot_white_1 = my_Bot_2(spieler_farbe="white")
             # bot_white_1 = my_random_bot(spieler_farbe="white")
             # bot_white_1 = my_greedy_bot(spieler_farbe="white", simple_Bot=False)
             # bot_white_1 = my_minmax_bot(spieler_farbe="white")
@@ -284,7 +285,7 @@ class Spielfeld:
             if use_bots == 1 and not self.hat_gewonnen:
                 if self.possible_felder(spieler)[0] > 0:
                     if spieler == 0:
-                        if isinstance(bot_black_0, my_greedy_bot) or isinstance(bot_black_0, my_Bot):
+                        if isinstance(bot_black_0, my_greedy_bot) or isinstance(bot_black_0, my_Bot) or isinstance(bot_black_0, my_Bot_2):
                             bot_black_0.spielfeld = self.spielfeld.copy()
                         bot_black_0.pos_felder = self.possible_felder(spieler)[1].copy()
                         t1 = threading.Thread(target=bot_black_0.set_next_stone)
@@ -298,7 +299,7 @@ class Spielfeld:
                         bot_black_0.timeout = True
                         t1.join()
                     else:
-                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot):
+                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot) or isinstance(bot_white_1, my_Bot_2):
                             bot_white_1.spielfeld = self.spielfeld.copy()
                         bot_white_1.pos_felder = self.possible_felder(spieler)[1].copy()
                         t2 = threading.Thread(target=bot_white_1.set_next_stone)
@@ -346,7 +347,7 @@ class Spielfeld:
                                             idx, idy = self.coordinate_to_ids(event.pos)
                                             spieler_0_ist_dran = False
                     else:
-                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot):
+                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot) or isinstance(bot_white_1, my_Bot_2):
                             bot_white_1.spielfeld = self.spielfeld.copy()
                         bot_white_1.pos_felder = self.possible_felder(spieler)[1].copy()
                         t1 = threading.Thread(target=bot_white_1.set_next_stone)
@@ -378,7 +379,7 @@ class Spielfeld:
                            int(float(idy + 1) / 8.0 * self.display_height) - (self.stein_radius + offset_height))
                     pygame.draw.circle(self.game_display, (150, 50, 50), pos, 15)
                     pygame.display.update()
-                    time.sleep(1)
+                    # time.sleep(1)
 
 
             for event in pygame.event.get():
@@ -406,11 +407,11 @@ class Spielfeld:
 
 
 if __name__ == '__main__':
-    play_many_games = False
+    play_many_games = True
     if play_many_games:
         black_counter = 0
         white_counter = 0
-        max_games = 1000
+        max_games = 10
         for elem in range(max_games):
             othello = Spielfeld()
             gewinner = othello.play_game(use_bots=1)
@@ -419,7 +420,7 @@ if __name__ == '__main__':
             elif gewinner == "white":
                 white_counter += 1
             print(str(elem + 1) + ". Spiel: Der Gewinner ist", gewinner)
-            delay = 2
+            delay = 0
             for i in range(delay):
                 print("\tDas nächste Spiel beginnt in:", delay-i, "Sekunde(n).")
                 time.sleep(1)
