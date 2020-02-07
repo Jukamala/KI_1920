@@ -4,8 +4,6 @@ import datetime
 
 import numpy as np
 import pygame
-from Random_Bot import my_random_bot
-from Greedy_Bot import my_greedy_bot
 from Bot_42 import my_Bot
 from TwoBot import my_Bot as my_Bot_2
 
@@ -258,10 +256,10 @@ class Spielfeld:
             einen Bot spielen möchten und den Schwierigkeitsgrad des Bots ändern möchten, können
             Sie den bot_white_1 anpassen.
             """
-            bot_black_0 = my_Bot(spieler_farbe="black")
+            bot_black_0 = my_Bot_2(spieler_farbe="black")
             # bot_black_0 = my_greedy_bot(spieler_farbe="black", simple_Bot=True)
 
-            bot_white_1 = my_Bot_2(spieler_farbe="white")
+            bot_white_1 = my_Bot(spieler_farbe="white")
             # bot_white_1 = my_random_bot(spieler_farbe="white")
             # bot_white_1 = my_greedy_bot(spieler_farbe="white", simple_Bot=False)
             # bot_white_1 = my_minmax_bot(spieler_farbe="white")
@@ -285,8 +283,7 @@ class Spielfeld:
             if use_bots == 1 and not self.hat_gewonnen:
                 if self.possible_felder(spieler)[0] > 0:
                     if spieler == 0:
-                        if isinstance(bot_black_0, my_greedy_bot) or isinstance(bot_black_0, my_Bot) or isinstance(bot_black_0, my_Bot_2):
-                            bot_black_0.spielfeld = self.spielfeld.copy()
+                        bot_black_0.spielfeld = self.spielfeld.copy()
                         bot_black_0.pos_felder = self.possible_felder(spieler)[1].copy()
                         t1 = threading.Thread(target=bot_black_0.set_next_stone)
                         t1.start()
@@ -299,8 +296,7 @@ class Spielfeld:
                         bot_black_0.timeout = True
                         t1.join()
                     else:
-                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot) or isinstance(bot_white_1, my_Bot_2):
-                            bot_white_1.spielfeld = self.spielfeld.copy()
+                        bot_white_1.spielfeld = self.spielfeld.copy()
                         bot_white_1.pos_felder = self.possible_felder(spieler)[1].copy()
                         t2 = threading.Thread(target=bot_white_1.set_next_stone)
                         t2.start()
@@ -347,8 +343,7 @@ class Spielfeld:
                                             idx, idy = self.coordinate_to_ids(event.pos)
                                             spieler_0_ist_dran = False
                     else:
-                        if isinstance(bot_white_1, my_greedy_bot) or isinstance(bot_white_1, my_Bot) or isinstance(bot_white_1, my_Bot_2):
-                            bot_white_1.spielfeld = self.spielfeld.copy()
+                        bot_white_1.spielfeld = self.spielfeld.copy()
                         bot_white_1.pos_felder = self.possible_felder(spieler)[1].copy()
                         t1 = threading.Thread(target=bot_white_1.set_next_stone)
                         t1.start()

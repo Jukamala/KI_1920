@@ -13,6 +13,19 @@ class my_Bot:
         self.cur_choice = None
         self.timeout = False
 
+        self.maxdepth = None
+        self.checkdepth = None
+        self.percentile = 1.5
+
+        self.weights = np.array([[4, -3, 2, 2, 2, 2, -3, 4],
+                                 [-3, -4, -1, -1, -1, -1, -4, -3],
+                                 [2, -1, 1, 0, 0, 1, -1, 2],
+                                 [2, -1, 0, 1, 1, 0, -1, 2],
+                                 [2, -1, 0, 1, 1, 0, -1, 2],
+                                 [2, -1, 1, 0, 0, 1, -1, 2],
+                                 [-3, -4, -1, -1, -1, -1, -4, -3],
+                                 [4, -3, 2, 2, 2, 2, -3, 4]])
+
         # Store evaluated positions - [value, value_type] indexed by [stones, player]
         self.positions = [[dict(), dict()] for i in range(64)]
 
@@ -30,14 +43,15 @@ class my_Bot:
         deep = 2
         p = False
         while not p and not self.timeout:
-            _, p, self.cur_choice = self.alpha_beta(position, self.spieler, depth, depth + deep)
-            #print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
-             #                       if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
-            self.positions = [[dict(), dict()] for i in range(64)]
+            self.checkdepth = depth + deep
+            self.maxdepth = depth + deep
+            _, p, self.cur_choice = self.alpha_beta(position, self.spieler, depth)
+            # print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
+            #                       if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
             deep += 1
         print(self.spieler, deep, p)
 
-    def alpha_beta(self, position, spieler, depth, maxdepth, alpha=float('-inf'), beta=float('inf')):
+    def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf')):
         """
         position:  8x8 array with 0 - empty, -1 - white, 1 - black
         spieler:   True - White, False - Black
@@ -63,14 +77,22 @@ class my_Bot:
             blacks = counts[e.index(-1)] if -1 in e else 0
             return [whites - blacks, True, None]
 
+        # Check-depth for Prob-Cut
+        # elif depth == self.checkdepth:
+        #    # v >= beta with prob.of at least p? yes = > cutoff
+        #    bound = round((self.percentile * sigma + beta - b) / a);
+        #    if self.zero_window_alpha_beta(position, not spieler, depth, alpha=bound - 1, beta=bound) >= bound:
+        #        return beta
+        #    # v <= alpha with prob.of at least p? yes = > cutoff
+        #   bound = round((self.percentile * sigma + alpha - b) / a);
+        #  if self.zero_window_alpha_beta(position, not spieler, depth, alpha=bound, beta=bound + 1) <= bound:
+        #       return alpha
+
         # Early stopping
-        elif depth == maxdepth:
-            # Use heuristic
-            e, counts = np.unique(position, return_counts=True)
-            e = list(e)
-            whites = counts[e.index(-1)] if -1 in e else 0
-            blacks = counts[e.index(1)] if 1 in e else 0
-            return [whites - blacks, False, None]
+        elif depth == self.maxdepth:
+            val = np.sum(np.sum(self.weights[position == (-1) ** spieler])) - \
+                  np.sum(np.sum(self.weights[position == (-1) ** (not spieler)]))
+            return [val, False, None]
 
         posbytes = position.tobytes()
         if posbytes in self.positions[depth][spieler]:
@@ -78,10 +100,10 @@ class my_Bot:
             if pure:
                 return [value, pure, moves[0] if moves is not None else None]
             if moves is None:
-                print('ho')
-                print("%s at %s / %s - %s" % (spieler, depth, maxdepth, moves))
+                print('Saved a empty move list')
+                print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
                 print(position, value, pure)
-            # Look again for unpure
+            # Look again if unpure
             value_set = True
         else:
             pure = True
@@ -89,16 +111,15 @@ class my_Bot:
             moves, mobility = self.possible_felder(position, spieler, depth)
             # TODO: Sort moves
 
-        # print("%s at %s / %s - %s" % (spieler, depth, maxdepth, moves))
+        # print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
 
         if len(moves) == 0:
-            # TODO Two dicts
             if self.possible_felder(position, not spieler, depth)[1] == 0:
                 # Return max
                 value = (-1)**(not spieler) * 64
                 self.positions[depth][spieler][position.tobytes()] = [value, True, None]
                 return [value, True, None]
-            v, p, _ = self.alpha_beta(position, not spieler, depth, maxdepth, alpha=alpha, beta=beta)
+            v, p, _ = self.alpha_beta(position, not spieler, depth, alpha=alpha, beta=beta)
             # Set alpha/beta
             if not value_set:
                 value = float('-inf') if spieler else float('inf')
@@ -118,7 +139,7 @@ class my_Bot:
             for i, move in enumerate(moves):
                 # print(i, move, move[0], move[1])
                 _, undos = self.check_rules(position, move[0], move[1], spieler, play=True)
-                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, maxdepth, alpha=alpha, beta=beta)
+                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, alpha=alpha, beta=beta)
                 if v > value:
                     pure = pure & p
                     value = v
@@ -135,7 +156,7 @@ class my_Bot:
             for i, move in enumerate(moves):
                 # print(i, move)
                 _, undos = self.check_rules(position, move[0], move[1], spieler, play=True)
-                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, maxdepth, alpha=alpha, beta=beta)
+                v, p, _ = self.alpha_beta(position, not spieler, depth + 1, alpha=alpha, beta=beta)
                 if v < value:
                     pure = pure & p
                     value = v
@@ -152,7 +173,7 @@ class my_Bot:
         try:
             return [value, pure, moves[0]]
         except TypeError:
-            print("%s at %s / %s - %s" % (spieler, depth, maxdepth, moves))
+            print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
             print(position, value, pure)
             print('alarm')
 
