@@ -242,7 +242,7 @@ class Spielfeld:
     def play_game(self, use_bots):
         spieler = 0
         running = True
-        timeout = 2
+        timeout = 0.5
 
         black_stones, white_stones, self.hat_gewonnen = self.check_for_win()
         akt_spieler_musste_passen = 0

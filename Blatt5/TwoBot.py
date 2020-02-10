@@ -70,6 +70,11 @@ class my_Bot:
         position[self.spielfeld == 'black'] = 1
 
         depth = len(np.nonzero(position)[0])
+
+        if depth <= 6:
+            self.cur_choice = random.choice(self.possible_felder(position, self.spieler, depth)[0])
+            return
+
         deep = 2
         p = False
         while not p:
@@ -78,13 +83,13 @@ class my_Bot:
                 v, p, self.cur_choice = self.alpha_beta(position, self.spieler, depth)
             except ResourceWarning:
                 break
-            print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
-                                    if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
+            # print("len %s - %s" % ({k: len(d[0]) + len(d[1]) for k, d in enumerate(self.positions)
+            #                         if len(d[0]) + len(d[1]) > 0}, self.cur_choice))
             deep += 1
         print("%s searched till depth %d %s value %d" %
-              (["Black", "White"][self.spieler], deep, ["estimating", "getting"][p], v))
+              (["Black", "White"][self.spieler], deep-1, ["estimating", "getting"][p], v))
 
-    def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf'), val_save=True, val_load=False):
+    def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf'), val_save=True):
         """
         position:  8x8 array with 0 - empty, -1 - white, 1 - black
         spieler:   True - White, False - Black
@@ -119,9 +124,9 @@ class my_Bot:
                 print('Saved a empty move list')
                 print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
                 print(position, value, pure)
+            pure = True
+            value_set = False
             mobility = len(moves)
-            # Look again if unpure
-            value_set = val_load
         else:
             pure = True
             value_set = False
@@ -147,7 +152,8 @@ class my_Bot:
         if len(moves) == 0:
             if self.possible_felder(position, not spieler, depth)[1] == 0:
                 # Return max
-                value = (-1) ** (not spieler) * 65000
+                val = np.sum(np.sum(position == -1)) - np.sum(np.sum(position == 1))
+                value = (-1) ** (val < 0) * 65000 if val != 0 else 0
                 if val_save:
                     self.positions[depth][spieler][position.tobytes()] = [value, True, None]
                 return [value, True, None]
