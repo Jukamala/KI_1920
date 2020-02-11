@@ -62,7 +62,7 @@ class my_Bot:
         self.positions = [[dict(), dict()] for i in range(64)]
 
     def set_next_stone(self):
-        self.positions = [[dict(), dict()] for i in range(64)]
+        # self.positions = [[dict(), dict()] for i in range(64)]
         self.timeout = False
         # empty - 0, white - 1, black - 1
         position = np.zeros((8, 8))
@@ -71,9 +71,10 @@ class my_Bot:
 
         depth = len(np.nonzero(position)[0])
 
-        if depth <= 6:
-            self.cur_choice = random.choice(self.possible_felder(position, self.spieler, depth)[0])
-            return
+        #if depth <= 6:
+        #    self.cur_choice = random.choice(self.possible_felder(position, self.spieler, depth)[0])
+        #    return
+
         deep = 2
         p = False
         while not p:
@@ -105,13 +106,14 @@ class my_Bot:
         if self.timeout:
             raise ResourceWarning('Timeout')
 
+        loc_val_save = True
         # Game done
         if np.count_nonzero(position) == 64:
             #  # White - # Black
             e, counts = np.unique(position, return_counts=True)
             e = list(e)
             whites = counts[e.index(-1)] if -1 in e else 0
-            blacks = counts[e.index(-1)] if -1 in e else 0
+            blacks = counts[e.index(1)] if 1 in e else 0
             return [1000 * (whites - blacks), True, None]
 
         posbytes = position.tobytes()
@@ -119,6 +121,9 @@ class my_Bot:
             value, pure, moves = self.positions[depth][spieler][posbytes]
             if pure:
                 return [value, pure, moves[0] if moves is not None else None]
+            #if random.choice([True, False]):
+            del self.positions[depth][spieler][posbytes]
+            loc_val_save = False
             if moves is None:
                 print('Saved a empty move list')
                 print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
@@ -144,7 +149,13 @@ class my_Bot:
                   np.sum(np.sum(position == (-1) ** (not spieler)))
 
             # Bonus for stables
-            stab = (-1)**(not spieler) * (stable(position, spieler) - stable(position, not spieler))
+            whitestab = stable(position, True)
+            blackstab = stable(position, False)
+            if whitestab > 32:
+                return [whitestab*1000, True, None]
+            if blackstab > 32:
+                return [-blackstab*1000, True, None]
+            stab = (whitestab - blackstab)
             return [k1 * val + k2 * mobility + k3 * stab, False, None]
 
         # print("%s at %s / %s - %s" % (spieler, depth, self.maxdepth, moves))
@@ -154,7 +165,7 @@ class my_Bot:
                 # Return max
                 val = np.sum(np.sum(position == -1)) - np.sum(np.sum(position == 1))
                 value = (-1) ** (val < 0) * 65000 if val != 0 else 0
-                if val_save:
+                if val_save and loc_val_save:
                     self.positions[depth][spieler][position.tobytes()] = [value, True, None]
                 return [value, True, None]
             v, p, _ = self.alpha_beta(position, not spieler, depth, alpha=alpha, beta=beta)
@@ -207,7 +218,7 @@ class my_Bot:
 
         # Reorder with best first
         moves = [moves[i] for i in best_ids] + [m for i, m in enumerate(moves) if i not in best_ids]
-        if val_save:
+        if val_save and loc_val_save:
             self.positions[depth][spieler][position.tobytes()] = [value, pure, moves]
         try:
             return [value, pure, moves[0]]

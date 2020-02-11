@@ -62,16 +62,16 @@ class my_Bot:
         self.positions = [[dict(), dict()] for i in range(64)]
 
     def set_next_stone(self):
-        # Prepare next round
-        self.timeout = False
-        self.positions = [[dict(), dict()] for i in range(64)]
-
         # empty - 0, white - 1, black - 1
         position = np.zeros((8, 8))
         position[self.spielfeld == 'white'] = -1
         position[self.spielfeld == 'black'] = 1
 
         depth = len(np.nonzero(position)[0])
+
+        if depth <= 6:
+            self.cur_choice = random.choice(self.possible_felder(position, self.spieler, depth)[0])
+            return
 
         deep = 2
         p = False
@@ -85,6 +85,10 @@ class my_Bot:
 
         print("%s searched till depth %d %s value %d" %
               (["Black", "White"][self.spieler], deep-1, ["estimating", "achieving"][p], v))
+
+        # Prepare next round
+        self.timeout = False
+        self.positions = [[dict(), dict()] for i in range(64)]
 
     def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf')):
         """
@@ -116,10 +120,7 @@ class my_Bot:
         if posbytes in self.positions[depth][spieler]:
             value, pure, moves = self.positions[depth][spieler][posbytes]
             if pure:
-                try:
-                    return [value, pure, moves[0] if moves is not None else None]
-                except IndexError:
-                    print(moves)
+                return [value, pure, moves[0] if moves is not None else None]
             pure = True
             mobility = len(moves)
         else:
@@ -143,11 +144,11 @@ class my_Bot:
             white_stables = stable(position, True)
             black_stables = stable(position, False)
             if white_stables > 32:
-                value = white_stables * 1000
-                return [value, True, None]
+                self.positions[depth][spieler][posbytes] = [value, True, moves]
+                return [white_stables * 1000, True, None]
             if black_stables > 32:
-                value = -black_stables * 1000
-                return [value, True, None]
+                self.positions[depth][spieler][posbytes] = [value, True, moves]
+                return [-black_stables * 1000, True, None]
             stab = (white_stables - black_stables)
             return [k1 * val + k2 * mobility + k3 * stab, False, None]
 

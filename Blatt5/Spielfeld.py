@@ -242,7 +242,7 @@ class Spielfeld:
     def play_game(self, use_bots):
         spieler = 0
         running = True
-        timeout = 0.5
+        timeout = 1
 
         black_stones, white_stones, self.hat_gewonnen = self.check_for_win()
         akt_spieler_musste_passen = 0
@@ -406,7 +406,7 @@ if __name__ == '__main__':
     if play_many_games:
         black_counter = 0
         white_counter = 0
-        max_games = 10
+        max_games = 20
         for elem in range(max_games):
             othello = Spielfeld()
             gewinner = othello.play_game(use_bots=1)
