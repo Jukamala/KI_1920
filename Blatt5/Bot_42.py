@@ -1,7 +1,5 @@
 import numpy as np
 import ast
-import matplotlib.pyplot as plt
-import random
 
 
 def stable(pos, spieler):
@@ -39,6 +37,7 @@ def stable(pos, spieler):
                 done[3] = False
     return np.sum(np.minimum(np.maximum(lu, ld) + np.maximum(ru, rd), 8))
 
+
 class my_Bot:
     def __init__(self, spieler_farbe, playbook=False):
         self.spieler = spieler_farbe == 'white'
@@ -74,7 +73,6 @@ class my_Bot:
             deep += 1
         print("%s searched till depth %d %s value %d" %
               (["Black", "White"][self.spieler], deep-1, ["estimating", "getting"][p], v))
-
 
     def alpha_beta(self, position, spieler, depth, alpha=float('-inf'), beta=float('inf')):
         """
@@ -185,7 +183,7 @@ class my_Bot:
                 for place, undo in undos.items():
                     position[place[0], place[1]] = undo
                 alpha = max(alpha, value)
-                if alpha > beta:
+                if alpha >= beta:
                     break
         # Black
         else:

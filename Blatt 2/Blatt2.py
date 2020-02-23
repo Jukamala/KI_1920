@@ -38,7 +38,7 @@ def plot_predict(model, x, y):
     return y_predict
 
 
-#Combine all predictions in a nice plot
+# Combine all predictions in a nice plot
 def overview(x_train, y_train, x_test, y_test, predictions):
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.scatter(x_train, y_train, s=4, c='darkcyan', label='train_data')
@@ -51,9 +51,10 @@ def overview(x_train, y_train, x_test, y_test, predictions):
 
 # Euclidian Distance
 def ed(y, y_hat):
-    return np.sqrt(np.mean((y - y_hat)**2))
+    return np.sqrt(np.sum((y - y_hat)**2))
 
-#Mean Square Error
+
+# Mean Square Error
 def mse(y, y_hat):
     return np.mean((y - y_hat)**2)
 
@@ -65,15 +66,15 @@ class RegressionModel:
         self.Normalizers = [plt.Normalize(), plt.Normalize()]
 
     def fit(self, x_train, y_train, mu=1, tol=0.00001):
-        #Normalize data
+        # Normalize data
         self.Normalizers[0].autoscale(x_train)
         self.Normalizers[1].autoscale(y_train)
 
-        #Normalize
+        # Normalize
         x_train = np.array(self.Normalizers[0](x_train))
         y_train = np.array(self.Normalizers[1](y_train))
 
-        #Features
+        # Features
         X = self._generate_features(x_train)
 
         # Normalengleichung as a starting point
@@ -89,7 +90,7 @@ class RegressionModel:
         while np.linalg.norm(gradient) > tol:
             gradient = np.matmul(X.T, np.matmul(X, self.model)) - np.matmul(y_train.T, X)
 
-            #Get a status avery 1.000 Steps
+            # Get a status every 1.000 Steps
             steps += 1
             if steps == 1000:
                 steps = 0
@@ -98,7 +99,7 @@ class RegressionModel:
             self.model = self.model - mu * (1/len(x_train)) * gradient
 
     def predict(self, x_test):
-        #Normalized on x_train
+        # Normalized on x_train
         x_test = np.array(self.Normalizers[0](x_test))
 
         if self.model is None:
@@ -109,13 +110,12 @@ class RegressionModel:
         for a in np.flip(self.model):
             res = x_test * res + a
 
-        #De-normalize
+        # De-normalize
         return np.array(self.Normalizers[1].inverse(res))
 
     def _generate_features(self, x_values):
         p, x_val = np.meshgrid(np.arange(0, self.degree + 1), x_values)
         return x_val**p
-
 
 
 if __name__ == '__main__':

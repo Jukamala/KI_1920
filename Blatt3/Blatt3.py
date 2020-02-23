@@ -3,12 +3,13 @@ import matplotlib.pyplot as plt
 import random
 import numpy as np
 
+
 def a_star(g, h, s, t, animate=False, pos=None, title=None):
-    '''
+    """
     Returns the nodes of a shortest path from s to t in graph g using A* with
     costs c as edge attribute and a monotone estimator h.
     Can be optionally animated.
-    '''
+    """
     if animate:
         fig, ax = plt.subplots()
         if title is not None:
@@ -117,7 +118,7 @@ def minmax(g, node, max_player, alpha=float('-inf'), beta=float('inf')):
         for n in g[node]:
             value = max(value, minmax(g, n, False, alpha=alpha, beta=beta))
             alpha = max(alpha, value)
-            if alpha > beta:
+            if alpha >= beta:
                 break
     else:
         value = float('inf')
@@ -176,12 +177,20 @@ def aufgabe_2_1():
 
 def aufgabe_2_2():
     g = nx.DiGraph()
+    g.add_nodes_from(range(28))
+    g.add_edges_from([(0, 1), (0, 2), (1, 3), (1, 4), (1, 5), (2, 6), (2, 7), (2, 8), (2, 9),
+                      (3, 10), (3, 11), (4, 12), (4, 13), (5, 14), (5, 15), (5, 16), (5, 17),
+                      (6, 18), (6, 19), (6, 20), (7, 21), (7, 22), (7, 23), (8, 24), (8, 25),
+                      (9, 26), (9, 27)])
+    val = {x: y for x, y in zip(range(10, 28), [7,15,20,23,16,3,2,1,6,17,10,3,1,2])}
+    """
     g.add_nodes_from(range(33))
     g.add_edges_from([(0, 1), (0, 2), (0, 3), (1, 4), (1, 5), (2, 6), (2, 7), (3, 8), (3, 9), (4, 10),
                       (4, 11), (5, 12), (6, 13), (6, 14), (7, 15), (8, 16), (9, 17), (9, 18), (10, 19),
                       (10, 20), (11, 21), (11, 22), (11, 23), (12, 24), (13, 25), (14, 26), (14, 27),
                       (15, 28), (16, 29), (17, 30), (17, 31), (18, 32)])
     val = {x: y for x, y in zip(range(19, 33), [7, 9, 1, 2, 8, 6, 5, 6, 9, 7, 5, 9, 8, 6])}
+    """
     nx.set_node_attributes(g, None, 'val')
     nx.set_node_attributes(g, None, 'alpha')
     nx.set_node_attributes(g, None, 'beta')
@@ -225,6 +234,6 @@ def aufgabe_2_3():
 
 
 if __name__ == '__main__':
-    aufgabe_2_1()
+    # aufgabe_2_1()
     aufgabe_2_2()
-    aufgabe_2_3()
+    # aufgabe_2_3()
