@@ -1,19 +1,12 @@
-import os
 import time
-import datetime
-
 import numpy as np
 import pygame
 from Bot_42 import my_Bot
 from TwoBot import my_Bot as my_Bot_2
-
-
-
+from Greedy_Bot import my_Bot as my_Bot_3
 
 from pygame import gfxdraw
-import _thread
 import threading
-from threading import Event
 
 
 class Spielfeld:
@@ -34,8 +27,6 @@ class Spielfeld:
         pygame.display.set_caption("Othello")
         self.clock = pygame.time.Clock()
         self.hat_gewonnen = False
-
-
 
     def new_Spielfeld(self):
 
@@ -74,8 +65,6 @@ class Spielfeld:
         for elem in coordiantes:
             pygame.draw.line(self.game_display, self.line_color, elem[0], elem[1], 2)
 
-
-
         for idy, row in enumerate(self.spielfeld):
             for idx, zelle in enumerate(row):
                 # print("zelle =", zelle)
@@ -94,9 +83,6 @@ class Spielfeld:
                     pygame.gfxdraw.aacircle(self.game_display, pos[0], pos[1], self.stein_radius, (0, 0, 0))
                     pygame.gfxdraw.filled_circle(self.game_display, pos[0], pos[1], self.stein_radius, (0, 0, 0))
 
-
-
-
         for idy, row in enumerate(self.spielfeld):
             for idx, zelle in enumerate(row):
                 if pos_felder[idy][idx] == "pos_f":
@@ -107,8 +93,6 @@ class Spielfeld:
                     # pygame.draw.circle(self.game_display, (50, 50, 50), pos, 5)
                     pygame.gfxdraw.aacircle(self.game_display, pos[0], pos[1], 5, (50, 50, 50))
                     pygame.gfxdraw.filled_circle(self.game_display, pos[0], pos[1], 5, (50, 50, 50))
-
-
 
         if self.hat_gewonnen:
 
@@ -143,7 +127,6 @@ class Spielfeld:
             self.game_display.blit(textsurface_line2, line2_pos)
             self.game_display.blit(textsurface_line3, (180, 350))
             self.game_display.blit(textsurface_line4, (199, 400))
-
 
         # pygame.display.flip()
         pygame.display.update()
@@ -221,7 +204,6 @@ class Spielfeld:
         # print("pos_felder =", counter == len(pos_felder))
         return counter, pos_felder
 
-
     def check_for_win(self):
         black_stones = (self.spielfeld == "black").sum()
         white_stones = (self.spielfeld == "white").sum()
@@ -242,7 +224,7 @@ class Spielfeld:
     def play_game(self, use_bots):
         spieler = 0
         running = True
-        timeout = 1
+        timeout = 2
 
         black_stones, white_stones, self.hat_gewonnen = self.check_for_win()
         akt_spieler_musste_passen = 0
@@ -256,7 +238,7 @@ class Spielfeld:
             einen Bot spielen möchten und den Schwierigkeitsgrad des Bots ändern möchten, können
             Sie den bot_white_1 anpassen.
             """
-            bot_black_0 = my_Bot_2(spieler_farbe="black")
+            bot_black_0 = my_Bot(spieler_farbe="black")
             # bot_black_0 = my_greedy_bot(spieler_farbe="black", simple_Bot=True)
 
             bot_white_1 = my_Bot(spieler_farbe="white")
